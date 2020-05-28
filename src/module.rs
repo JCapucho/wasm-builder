@@ -1,25 +1,46 @@
 use crate::{sections, types};
 use std::io::{self, Write};
 
+// The WASM magic byte sequence (\0asm) needed in every module
 const MAGIC: [u8; 4] = [0x00, 0x61, 0x73, 0x6D];
 const VERSION: [u8; 4] = [0x01, 0x00, 0x00, 0x00]; // Version 1
 
+/// Represents a wasm binary module
+///
+/// The binary encoding of a module is organized into sections.
+
+/// Most sections correspond to one component of a module record,
+/// except that function definitions are split into two sections,
+/// separating their type declarations in the function section from
+/// their bodies in the code section.
 #[derive(Debug, Clone)]
 pub struct Module<'a> {
+    /// types section
     pub types: Vec<types::FunctionType>,
+    /// imports section
     pub imports: Vec<sections::Import>,
+    /// functions section
     pub functions: Vec<sections::TypeIdx>,
+    /// tables section
     pub tables: Vec<types::TableType>,
+    /// memory section
     pub memory: Vec<types::MemoryType>,
+    /// globals section
     pub globals: Vec<sections::Global>,
+    /// exports section
     pub exports: Vec<sections::Export>,
+    /// start section
     pub start: Option<sections::FuncIdx>,
+    /// elements section
     pub elements: Vec<sections::Element>,
+    /// code section
     pub code: Vec<sections::Function>,
+    /// data section
     pub data: Vec<sections::Data<'a>>,
 }
 
 impl<'a> Module<'a> {
+    /// Creates a empty Module
     pub fn new() -> Self {
         Module {
             types: vec![],
@@ -36,6 +57,7 @@ impl<'a> Module<'a> {
         }
     }
 
+    /// Writes the binary wasm to a type implementing Write
     pub fn encode(&self, writer: &mut impl Write) -> io::Result<()> {
         writer.write(&MAGIC)?;
         writer.write(&VERSION)?;

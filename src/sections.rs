@@ -11,7 +11,7 @@ pub type TableIdx = u32;
 
 #[derive(Debug, Copy, Clone)]
 #[repr(u8)]
-pub enum Section {
+enum Section {
     Custom = 0,
     Type,
     Import,
@@ -26,11 +26,16 @@ pub enum Section {
     Data,
 }
 
+/// Describes an import or export
 #[derive(Debug, Copy, Clone)]
 pub enum Desc {
+    /// A function index
     Function(TypeIdx),
+    /// A table
     Table(types::TableType),
+    /// A memory
     Memory(types::MemoryType),
+    /// A global
     Global(types::GlobalType),
 }
 
@@ -38,18 +43,22 @@ impl Desc {
     pub(crate) fn encode(&self, writer: &mut impl Write) -> io::Result<()> {
         match self {
             Desc::Function(func) => {
+                // Function identifier: 0x00
                 writer.write(&[0x00])?;
                 types::encode_u32(writer, *func)?;
             }
             Desc::Table(table) => {
+                // Table identifier: 0x01
                 writer.write(&[0x01])?;
                 table.encode(writer)?;
             }
             Desc::Memory(mem) => {
+                // Memory identifier: 0x02
                 writer.write(&[0x02])?;
                 mem.encode(writer)?;
             }
             Desc::Global(global) => {
+                // Global identifier: 0x03
                 writer.write(&[0x03])?;
                 global.encode(writer)?;
             }
@@ -59,10 +68,15 @@ impl Desc {
     }
 }
 
+/// The import component defines a import that is need for
+/// [instantiation](https://webassembly.github.io/spec/core/exec/modules.html#exec-instantiation)
 #[derive(Debug, Clone)]
 pub struct Import {
+    /// The module name
     pub module: String,
+    /// The import name
     pub name: String,
+    /// The import itself
     pub desc: Desc,
 }
 
@@ -74,9 +88,12 @@ impl Import {
     }
 }
 
+/// The global component defines a global variable
 #[derive(Debug, Clone)]
 pub struct Global {
+    /// The type of the global
     pub ty: types::GlobalType,
+    /// The init expression of the global
     pub init: Expr,
 }
 
@@ -88,9 +105,13 @@ impl Global {
     }
 }
 
+/// The export component defines a export that becomes accessible
+/// to the host environment once the module has been instantiated
 #[derive(Debug, Clone)]
 pub struct Export {
+    /// The name of the export
     pub name: String,
+    /// The export itself
     pub desc: Desc,
 }
 
@@ -101,10 +122,14 @@ impl Export {
     }
 }
 
+/// The Element component provides a way to initialize a subrange of a table
 #[derive(Debug, Clone)]
 pub struct Element {
+    /// The table being initialized
     pub table: TableIdx,
+    /// The expression that gives the offset into the table
     pub offset: Expr,
+    /// The data to fill the subrange
     pub init: Vec<FuncIdx>,
 }
 
@@ -115,8 +140,8 @@ impl Element {
 
         let mut buf = Vec::with_capacity(std::mem::size_of_val(&self.init));
 
-        for func in self.init.iter() {
-            types::encode_u32(&mut buf, *func)?;
+        for idx in self.init.iter() {
+            types::encode_u32(&mut buf, *idx)?;
         }
 
         types::encode_vec(writer, &buf, self.init.len() as u32)?;
@@ -124,9 +149,16 @@ impl Element {
     }
 }
 
+/// Defines a mutable local variable
+///
+/// Locals are referenced by their index
+///
+/// The index of the first local is the smallest index not referencing a parameter
 #[derive(Debug, Clone)]
 pub struct Local {
+    /// The local index
     pub n: u32,
+    /// The type of the local
     pub ty: types::ValType,
 }
 
@@ -138,9 +170,12 @@ impl Local {
     }
 }
 
+/// Defines a function component
 #[derive(Debug, Clone)]
 pub struct Function {
+    /// The functions locals
     pub locals: Vec<Local>,
+    /// The function body
     pub body: Expr,
 }
 
@@ -148,8 +183,8 @@ impl Function {
     pub(crate) fn encode(&self, writer: &mut impl Write) -> io::Result<usize> {
         let mut buf = Vec::with_capacity(std::mem::size_of_val(&self.locals));
 
-        for ty in self.locals.iter() {
-            ty.encode(&mut buf)?;
+        for local in self.locals.iter() {
+            local.encode(&mut buf)?;
         }
 
         let mut length = types::encode_vec(writer, &buf, self.locals.len() as u32)?;
@@ -158,10 +193,14 @@ impl Function {
     }
 }
 
+/// The data component defines a vector of data to initialize a subrange of a memory
 #[derive(Debug, Clone)]
 pub struct Data<'a> {
+    /// The memory being initialized
     pub mem: MemoryIdx,
+    /// The offset into the memory
     pub offset: Expr,
+    /// The data to initialize the subrange with
     pub init: &'a [u8],
 }
 
@@ -182,6 +221,7 @@ fn encode_section_header(writer: &mut impl Write, id: Section, size: u32) -> io:
     Ok(())
 }
 
+#[allow(dead_code)]
 pub(crate) fn encode_custom_section(
     writer: &mut impl Write,
     name: &str,
@@ -320,7 +360,7 @@ pub(crate) fn encode_start_section(writer: &mut impl Write, start: FuncIdx) -> i
 
     let size = types::encode_u32(&mut buf, start)?;
 
-    encode_section_header(writer, Section::Export, size as u32)?;
+    encode_section_header(writer, Section::Start, size as u32)?;
     writer.write(&buf)?;
 
     Ok(())

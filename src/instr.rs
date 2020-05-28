@@ -3,10 +3,14 @@ use super::types;
 use std::io::{self, Write};
 use types::ValType;
 
+/// Specifies the return type of a block
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum BlockType {
+    // Doesn't return data
     Empty,
+    // Returns a value
     Type(types::ValType),
+    // Returns the type at the specified index in the types section
     TypeIdx(u32),
 }
 
@@ -15,14 +19,19 @@ impl BlockType {
         match self {
             BlockType::Empty => writer.write(&[0x40]),
             BlockType::Type(ty) => types::encode_val_type(writer, *ty),
+            // The index must be treated as signed to avoid collisions and as to not lose
+            // precision a s33 is used (We encode it using a i64)
             BlockType::TypeIdx(idx) => types::encode_i64(writer, *idx as i64),
         }
     }
 }
 
+/// Describes the operation of a memory op
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct MemoryArgument {
+    /// The alignment of the operation
     pub alignment: u32,
+    /// The offset into memory
     pub offset: u32,
 }
 
@@ -34,6 +43,7 @@ impl MemoryArgument {
     }
 }
 
+/// Describes how much should be read and written to memory
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum StorageType {
     I8,  // 8
@@ -690,6 +700,7 @@ impl Instruction {
     }
 }
 
+/// Expressions are encoded instruction sequences terminated by an end opcode (0x0B)
 #[derive(Debug, Clone, PartialEq)]
 pub struct Expr(pub Vec<Instruction>);
 

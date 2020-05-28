@@ -8,9 +8,12 @@ pub enum ValType {
     F64,
 }
 
+/// Describes a limit
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Limits {
+    /// minimum
     pub min: u32,
+    /// maximum (optional)
     pub max: Option<u32>,
 }
 
@@ -89,6 +92,10 @@ pub(crate) fn encode_result_type(writer: &mut impl Write, types: &[ValType]) -> 
     Ok(())
 }
 
+/// A function type is composed of the types of the parameters and the types of the returns
+///
+/// Warning: Multiple return types require the "multi-value" proposal
+/// (although this has been accepted and merged into the core spec beware)
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunctionType {
     pub parameter_types: Vec<ValType>,
@@ -100,14 +107,21 @@ impl FunctionType {
         writer.write(&[0x60])?;
 
         encode_result_type(writer, &self.parameter_types)?;
+
+        if self.return_types.len() > 1 {
+            log::debug!("Warning: Multiple return types require the multi-value proposal");
+        }
+
         encode_result_type(writer, &self.return_types)?;
 
         Ok(())
     }
 }
 
+/// Describes a memory object
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct MemoryType {
+    /// the limits of the memory object
     pub lim: Limits,
 }
 
@@ -117,8 +131,10 @@ impl MemoryType {
     }
 }
 
+/// Describes a table
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct TableType {
+    /// the limits of the table
     pub lim: Limits,
 }
 
@@ -129,6 +145,10 @@ impl TableType {
     }
 }
 
+/// Describes the type of a global and it's mutability or lack of it
+///
+/// Warning: Importing or Exporting a mutable global requires "Import/Export of Mutable Globals" proposal
+/// (although this has been accepted and merged into the core spec beware)
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct GlobalType {
     pub ty: ValType,
