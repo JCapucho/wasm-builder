@@ -1,6 +1,7 @@
 use super::sections::*;
 use super::types;
 use std::io::{self, Write};
+use types::ValType;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum BlockType {
@@ -34,38 +35,30 @@ impl MemoryArgument {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum MemoryType {
-    Int,    // i32
-    Long,   // i64
-    Float,  // f32
-    Double, // f64
-}
-
-#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum StorageType {
-    Byte,  // 8
-    Short, // 16
-    Int,   // 32
+    I8,  // 8
+    I16, // 16
+    I32, // 32
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Literal {
-    Int(i32),
-    Long(i64),
-    Float(f32),
-    Double(f64),
+    I32(i32),
+    I64(i64),
+    F32(f32),
+    F64(f64),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum IntegerType {
-    Int,
-    Long,
+    I32,
+    I64,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FloatType {
-    Float,
-    Double,
+    F32,
+    F64,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -103,33 +96,33 @@ pub enum Instruction {
     GlobalSet(GlobalIdx),
     Load {
         mem: MemoryArgument,
-        ty: MemoryType,
+        ty: ValType,
         storage: Option<(bool, StorageType)>,
     },
     Store {
         mem: MemoryArgument,
-        ty: MemoryType,
+        ty: ValType,
         storage: Option<StorageType>,
     },
     MemorySize,
     MemoryGrow,
     Const(Literal),
     EqualZero(IntegerType),
-    Equal(MemoryType),
-    NotEqual(MemoryType),
-    LessThanInt {
+    Equal(ValType),
+    NotEqual(ValType),
+    LessThanI32 {
         ty: IntegerType,
         signed: bool,
     },
-    GreaterThanInt {
+    GreaterThanI32 {
         ty: IntegerType,
         signed: bool,
     },
-    LessOrEqualInt {
+    LessOrEqualI32 {
         ty: IntegerType,
         signed: bool,
     },
-    GreaterOrEqualInt {
+    GreaterOrEqualI32 {
         ty: IntegerType,
         signed: bool,
     },
@@ -140,10 +133,10 @@ pub enum Instruction {
     CountLeadingZero(IntegerType),
     CountTrailingZero(IntegerType),
     CountOnes(IntegerType),
-    Add(MemoryType),
-    Subtract(MemoryType),
-    Multiply(MemoryType),
-    IntDivision {
+    Add(ValType),
+    Subtract(ValType),
+    Multiply(ValType),
+    I32Division {
         ty: IntegerType,
         signed: bool,
     },
@@ -172,25 +165,25 @@ pub enum Instruction {
     Minimum(FloatType),
     Maximum(FloatType),
     CopySign(FloatType),
-    IntWrap,
+    I32Wrap,
     // signed
-    IntExtend(bool),
-    IntTruncate {
+    I32Extend(bool),
+    I32Truncate {
         ty: IntegerType,
         float: FloatType,
         signed: bool,
     },
     Convert {
         ty: FloatType,
-        int: IntegerType,
+        tgt_ty: IntegerType,
         signed: bool,
     },
     FloatDemote,
     FloatPromote,
-    IntReinterpret,
-    LongReinterpret,
-    FloatReinterpret,
-    DoubleReinterpret,
+    I32ReI32erpret,
+    LongReI32erpret,
+    FloatReI32erpret,
+    DoubleReI32erpret,
     Extend {
         ty: IntegerType,
         base: StorageType,
@@ -306,47 +299,47 @@ impl Instruction {
             Instruction::Load { mem, ty, storage } => {
                 let mut length = 0;
                 match ty {
-                    MemoryType::Int => {
+                    ValType::I32 => {
                         if let Some(storage) = storage {
                             match storage.1 {
-                                StorageType::Byte => {
+                                StorageType::I8 => {
                                     if storage.0 {
                                         length += writer.write(&[0x2C])?;
                                     } else {
                                         length += writer.write(&[0x2D])?;
                                     }
                                 }
-                                StorageType::Short => {
+                                StorageType::I16 => {
                                     if storage.0 {
                                         length += writer.write(&[0x2E])?;
                                     } else {
                                         length += writer.write(&[0x2F])?;
                                     }
                                 }
-                                StorageType::Int => panic!(),
+                                StorageType::I32 => panic!(),
                             }
                         } else {
                             length += writer.write(&[0x28])?;
                         }
                     }
-                    MemoryType::Long => {
+                    ValType::I64 => {
                         if let Some(storage) = storage {
                             match storage.1 {
-                                StorageType::Byte => {
+                                StorageType::I8 => {
                                     if storage.0 {
                                         length += writer.write(&[0x30])?;
                                     } else {
                                         length += writer.write(&[0x31])?;
                                     }
                                 }
-                                StorageType::Short => {
+                                StorageType::I16 => {
                                     if storage.0 {
                                         length += writer.write(&[0x32])?;
                                     } else {
                                         length += writer.write(&[0x33])?;
                                     }
                                 }
-                                StorageType::Int => {
+                                StorageType::I32 => {
                                     if storage.0 {
                                         length += writer.write(&[0x34])?;
                                     } else {
@@ -358,14 +351,14 @@ impl Instruction {
                             length += writer.write(&[0x29])?;
                         }
                     }
-                    MemoryType::Float => {
+                    ValType::F32 => {
                         if let Some(_) = storage {
                             panic!()
                         } else {
                             length += writer.write(&[0x2A])?;
                         }
                     }
-                    MemoryType::Double => {
+                    ValType::F64 => {
                         if let Some(_) = storage {
                             panic!()
                         } else {
@@ -379,31 +372,31 @@ impl Instruction {
             Instruction::Store { mem, ty, storage } => {
                 let mut length = 0;
                 match ty {
-                    MemoryType::Int => {
+                    ValType::I32 => {
                         if let Some(storage) = storage {
                             match storage {
-                                StorageType::Byte => {
+                                StorageType::I8 => {
                                     length += writer.write(&[0x3A])?;
                                 }
-                                StorageType::Short => {
+                                StorageType::I16 => {
                                     length += writer.write(&[0x3B])?;
                                 }
-                                StorageType::Int => panic!(),
+                                StorageType::I32 => panic!(),
                             }
                         } else {
                             length += writer.write(&[0x36])?;
                         }
                     }
-                    MemoryType::Long => {
+                    ValType::I64 => {
                         if let Some(storage) = storage {
                             match storage {
-                                StorageType::Byte => {
+                                StorageType::I8 => {
                                     length += writer.write(&[0x3C])?;
                                 }
-                                StorageType::Short => {
+                                StorageType::I16 => {
                                     length += writer.write(&[0x3D])?;
                                 }
-                                StorageType::Int => {
+                                StorageType::I32 => {
                                     length += writer.write(&[0x3E])?;
                                 }
                             }
@@ -411,14 +404,14 @@ impl Instruction {
                             length += writer.write(&[0x37])?;
                         }
                     }
-                    MemoryType::Float => {
+                    ValType::F32 => {
                         if let Some(_) = storage {
                             panic!();
                         } else {
                             length += writer.write(&[0x38])?;
                         }
                     }
-                    MemoryType::Double => {
+                    ValType::F64 => {
                         if let Some(_) = storage {
                             panic!();
                         } else {
@@ -432,264 +425,264 @@ impl Instruction {
             Instruction::MemorySize => writer.write(&[0x3f, 0x00]),
             Instruction::MemoryGrow => writer.write(&[0x40, 0x00]),
             Instruction::Const(literal) => match literal {
-                Literal::Int(int) => {
+                Literal::I32(int) => {
                     let mut length = writer.write(&[0x41])?;
                     length += types::encode_i32(writer, *int)?;
                     Ok(length)
                 }
-                Literal::Long(long) => {
+                Literal::I64(long) => {
                     let mut length = writer.write(&[0x42])?;
                     length += types::encode_i64(writer, *long)?;
                     Ok(length)
                 }
-                Literal::Float(float) => {
+                Literal::F32(float) => {
                     let mut length = writer.write(&[0x43])?;
                     length += types::encode_f32(writer, *float)?;
                     Ok(length)
                 }
-                Literal::Double(double) => {
+                Literal::F64(double) => {
                     let mut length = writer.write(&[0x44])?;
                     length += types::encode_f64(writer, *double)?;
                     Ok(length)
                 }
             },
             Instruction::EqualZero(ty) => match ty {
-                IntegerType::Int => writer.write(&[0x45]),
-                IntegerType::Long => writer.write(&[0x50]),
+                IntegerType::I32 => writer.write(&[0x45]),
+                IntegerType::I64 => writer.write(&[0x50]),
             },
             Instruction::Equal(ty) => match ty {
-                MemoryType::Int => writer.write(&[0x46]),
-                MemoryType::Long => writer.write(&[0x51]),
-                MemoryType::Float => writer.write(&[0x5B]),
-                MemoryType::Double => writer.write(&[0x61]),
+                ValType::I32 => writer.write(&[0x46]),
+                ValType::I64 => writer.write(&[0x51]),
+                ValType::F32 => writer.write(&[0x5B]),
+                ValType::F64 => writer.write(&[0x61]),
             },
             Instruction::NotEqual(ty) => match ty {
-                MemoryType::Int => writer.write(&[0x47]),
-                MemoryType::Long => writer.write(&[0x52]),
-                MemoryType::Float => writer.write(&[0x5C]),
-                MemoryType::Double => writer.write(&[0x62]),
+                ValType::I32 => writer.write(&[0x47]),
+                ValType::I64 => writer.write(&[0x52]),
+                ValType::F32 => writer.write(&[0x5C]),
+                ValType::F64 => writer.write(&[0x62]),
             },
-            Instruction::LessThanInt { ty, signed } => match (ty, signed) {
-                (IntegerType::Int, true) => writer.write(&[0x48]),
-                (IntegerType::Int, false) => writer.write(&[0x49]),
-                (IntegerType::Long, true) => writer.write(&[0x53]),
-                (IntegerType::Long, false) => writer.write(&[0x54]),
+            Instruction::LessThanI32 { ty, signed } => match (ty, signed) {
+                (IntegerType::I32, true) => writer.write(&[0x48]),
+                (IntegerType::I32, false) => writer.write(&[0x49]),
+                (IntegerType::I64, true) => writer.write(&[0x53]),
+                (IntegerType::I64, false) => writer.write(&[0x54]),
             },
-            Instruction::GreaterThanInt { ty, signed } => match (ty, signed) {
-                (IntegerType::Int, true) => writer.write(&[0x4A]),
-                (IntegerType::Int, false) => writer.write(&[0x4B]),
-                (IntegerType::Long, true) => writer.write(&[0x55]),
-                (IntegerType::Long, false) => writer.write(&[0x56]),
+            Instruction::GreaterThanI32 { ty, signed } => match (ty, signed) {
+                (IntegerType::I32, true) => writer.write(&[0x4A]),
+                (IntegerType::I32, false) => writer.write(&[0x4B]),
+                (IntegerType::I64, true) => writer.write(&[0x55]),
+                (IntegerType::I64, false) => writer.write(&[0x56]),
             },
-            Instruction::LessOrEqualInt { ty, signed } => match (ty, signed) {
-                (IntegerType::Int, true) => writer.write(&[0x4C]),
-                (IntegerType::Int, false) => writer.write(&[0x4D]),
-                (IntegerType::Long, true) => writer.write(&[0x57]),
-                (IntegerType::Long, false) => writer.write(&[0x58]),
+            Instruction::LessOrEqualI32 { ty, signed } => match (ty, signed) {
+                (IntegerType::I32, true) => writer.write(&[0x4C]),
+                (IntegerType::I32, false) => writer.write(&[0x4D]),
+                (IntegerType::I64, true) => writer.write(&[0x57]),
+                (IntegerType::I64, false) => writer.write(&[0x58]),
             },
-            Instruction::GreaterOrEqualInt { ty, signed } => match (ty, signed) {
-                (IntegerType::Int, true) => writer.write(&[0x4E]),
-                (IntegerType::Int, false) => writer.write(&[0x4F]),
-                (IntegerType::Long, true) => writer.write(&[0x59]),
-                (IntegerType::Long, false) => writer.write(&[0x5A]),
+            Instruction::GreaterOrEqualI32 { ty, signed } => match (ty, signed) {
+                (IntegerType::I32, true) => writer.write(&[0x4E]),
+                (IntegerType::I32, false) => writer.write(&[0x4F]),
+                (IntegerType::I64, true) => writer.write(&[0x59]),
+                (IntegerType::I64, false) => writer.write(&[0x5A]),
             },
             Instruction::LessThanFloat(ty) => match ty {
-                FloatType::Float => writer.write(&[0x5D]),
-                FloatType::Double => writer.write(&[0x63]),
+                FloatType::F32 => writer.write(&[0x5D]),
+                FloatType::F64 => writer.write(&[0x63]),
             },
             Instruction::GreaterThanFloat(ty) => match ty {
-                FloatType::Float => writer.write(&[0x5E]),
-                FloatType::Double => writer.write(&[0x64]),
+                FloatType::F32 => writer.write(&[0x5E]),
+                FloatType::F64 => writer.write(&[0x64]),
             },
             Instruction::LessOrEqualFloat(ty) => match ty {
-                FloatType::Float => writer.write(&[0x5F]),
-                FloatType::Double => writer.write(&[0x65]),
+                FloatType::F32 => writer.write(&[0x5F]),
+                FloatType::F64 => writer.write(&[0x65]),
             },
             Instruction::GreaterOrEqualFloat(ty) => match ty {
-                FloatType::Float => writer.write(&[0x60]),
-                FloatType::Double => writer.write(&[0x66]),
+                FloatType::F32 => writer.write(&[0x60]),
+                FloatType::F64 => writer.write(&[0x66]),
             },
             Instruction::CountLeadingZero(ty) => match ty {
-                IntegerType::Int => writer.write(&[0x67]),
-                IntegerType::Long => writer.write(&[0x79]),
+                IntegerType::I32 => writer.write(&[0x67]),
+                IntegerType::I64 => writer.write(&[0x79]),
             },
             Instruction::CountTrailingZero(ty) => match ty {
-                IntegerType::Int => writer.write(&[0x68]),
-                IntegerType::Long => writer.write(&[0x7A]),
+                IntegerType::I32 => writer.write(&[0x68]),
+                IntegerType::I64 => writer.write(&[0x7A]),
             },
             Instruction::CountOnes(ty) => match ty {
-                IntegerType::Int => writer.write(&[0x69]),
-                IntegerType::Long => writer.write(&[0x7B]),
+                IntegerType::I32 => writer.write(&[0x69]),
+                IntegerType::I64 => writer.write(&[0x7B]),
             },
             Instruction::Add(ty) => match ty {
-                MemoryType::Int => writer.write(&[0x6A]),
-                MemoryType::Long => writer.write(&[0x7C]),
-                MemoryType::Float => writer.write(&[0x92]),
-                MemoryType::Double => writer.write(&[0xA0]),
+                ValType::I32 => writer.write(&[0x6A]),
+                ValType::I64 => writer.write(&[0x7C]),
+                ValType::F32 => writer.write(&[0x92]),
+                ValType::F64 => writer.write(&[0xA0]),
             },
             Instruction::Subtract(ty) => match ty {
-                MemoryType::Int => writer.write(&[0x6B]),
-                MemoryType::Long => writer.write(&[0x7D]),
-                MemoryType::Float => writer.write(&[0x93]),
-                MemoryType::Double => writer.write(&[0xA1]),
+                ValType::I32 => writer.write(&[0x6B]),
+                ValType::I64 => writer.write(&[0x7D]),
+                ValType::F32 => writer.write(&[0x93]),
+                ValType::F64 => writer.write(&[0xA1]),
             },
             Instruction::Multiply(ty) => match ty {
-                MemoryType::Int => writer.write(&[0x6C]),
-                MemoryType::Long => writer.write(&[0x7E]),
-                MemoryType::Float => writer.write(&[0x94]),
-                MemoryType::Double => writer.write(&[0xA2]),
+                ValType::I32 => writer.write(&[0x6C]),
+                ValType::I64 => writer.write(&[0x7E]),
+                ValType::F32 => writer.write(&[0x94]),
+                ValType::F64 => writer.write(&[0xA2]),
             },
-            Instruction::IntDivision { ty, signed } => match (ty, signed) {
-                (IntegerType::Int, true) => writer.write(&[0x6D]),
-                (IntegerType::Int, false) => writer.write(&[0x6E]),
-                (IntegerType::Long, true) => writer.write(&[0x7F]),
-                (IntegerType::Long, false) => writer.write(&[0x80]),
+            Instruction::I32Division { ty, signed } => match (ty, signed) {
+                (IntegerType::I32, true) => writer.write(&[0x6D]),
+                (IntegerType::I32, false) => writer.write(&[0x6E]),
+                (IntegerType::I64, true) => writer.write(&[0x7F]),
+                (IntegerType::I64, false) => writer.write(&[0x80]),
             },
             Instruction::FloatDivision(ty) => match ty {
-                FloatType::Float => writer.write(&[0x95]),
-                FloatType::Double => writer.write(&[0xA3]),
+                FloatType::F32 => writer.write(&[0x95]),
+                FloatType::F64 => writer.write(&[0xA3]),
             },
             Instruction::Remainder { ty, signed } => match (ty, signed) {
-                (IntegerType::Int, true) => writer.write(&[0x6F]),
-                (IntegerType::Int, false) => writer.write(&[0x70]),
-                (IntegerType::Long, true) => writer.write(&[0x81]),
-                (IntegerType::Long, false) => writer.write(&[0x82]),
+                (IntegerType::I32, true) => writer.write(&[0x6F]),
+                (IntegerType::I32, false) => writer.write(&[0x70]),
+                (IntegerType::I64, true) => writer.write(&[0x81]),
+                (IntegerType::I64, false) => writer.write(&[0x82]),
             },
             Instruction::And(ty) => match ty {
-                IntegerType::Int => writer.write(&[0x71]),
-                IntegerType::Long => writer.write(&[0x83]),
+                IntegerType::I32 => writer.write(&[0x71]),
+                IntegerType::I64 => writer.write(&[0x83]),
             },
             Instruction::Or(ty) => match ty {
-                IntegerType::Int => writer.write(&[0x72]),
-                IntegerType::Long => writer.write(&[0x84]),
+                IntegerType::I32 => writer.write(&[0x72]),
+                IntegerType::I64 => writer.write(&[0x84]),
             },
             Instruction::Xor(ty) => match ty {
-                IntegerType::Int => writer.write(&[0x73]),
-                IntegerType::Long => writer.write(&[0x85]),
+                IntegerType::I32 => writer.write(&[0x73]),
+                IntegerType::I64 => writer.write(&[0x85]),
             },
             Instruction::ShiftLeft(ty) => match ty {
-                IntegerType::Int => writer.write(&[0x74]),
-                IntegerType::Long => writer.write(&[0x86]),
+                IntegerType::I32 => writer.write(&[0x74]),
+                IntegerType::I64 => writer.write(&[0x86]),
             },
             Instruction::ShiftRight { ty, signed } => match (ty, signed) {
-                (IntegerType::Int, true) => writer.write(&[0x75]),
-                (IntegerType::Int, false) => writer.write(&[0x76]),
-                (IntegerType::Long, true) => writer.write(&[0x87]),
-                (IntegerType::Long, false) => writer.write(&[0x88]),
+                (IntegerType::I32, true) => writer.write(&[0x75]),
+                (IntegerType::I32, false) => writer.write(&[0x76]),
+                (IntegerType::I64, true) => writer.write(&[0x87]),
+                (IntegerType::I64, false) => writer.write(&[0x88]),
             },
             Instruction::LeftRotation(ty) => match ty {
-                IntegerType::Int => writer.write(&[0x77]),
-                IntegerType::Long => writer.write(&[0x78]),
+                IntegerType::I32 => writer.write(&[0x77]),
+                IntegerType::I64 => writer.write(&[0x78]),
             },
             Instruction::RightRotation(ty) => match ty {
-                IntegerType::Int => writer.write(&[0x89]),
-                IntegerType::Long => writer.write(&[0x8A]),
+                IntegerType::I32 => writer.write(&[0x89]),
+                IntegerType::I64 => writer.write(&[0x8A]),
             },
             Instruction::Absolute(ty) => match ty {
-                FloatType::Float => writer.write(&[0x8B]),
-                FloatType::Double => writer.write(&[0x99]),
+                FloatType::F32 => writer.write(&[0x8B]),
+                FloatType::F64 => writer.write(&[0x99]),
             },
             Instruction::Negate(ty) => match ty {
-                FloatType::Float => writer.write(&[0x8C]),
-                FloatType::Double => writer.write(&[0x9A]),
+                FloatType::F32 => writer.write(&[0x8C]),
+                FloatType::F64 => writer.write(&[0x9A]),
             },
             Instruction::Ceil(ty) => match ty {
-                FloatType::Float => writer.write(&[0x8D]),
-                FloatType::Double => writer.write(&[0x9B]),
+                FloatType::F32 => writer.write(&[0x8D]),
+                FloatType::F64 => writer.write(&[0x9B]),
             },
             Instruction::Floor(ty) => match ty {
-                FloatType::Float => writer.write(&[0x8E]),
-                FloatType::Double => writer.write(&[0x9C]),
+                FloatType::F32 => writer.write(&[0x8E]),
+                FloatType::F64 => writer.write(&[0x9C]),
             },
             Instruction::Truncate(ty) => match ty {
-                FloatType::Float => writer.write(&[0x8F]),
-                FloatType::Double => writer.write(&[0x9D]),
+                FloatType::F32 => writer.write(&[0x8F]),
+                FloatType::F64 => writer.write(&[0x9D]),
             },
             Instruction::Nearest(ty) => match ty {
-                FloatType::Float => writer.write(&[0x90]),
-                FloatType::Double => writer.write(&[0x9E]),
+                FloatType::F32 => writer.write(&[0x90]),
+                FloatType::F64 => writer.write(&[0x9E]),
             },
             Instruction::SquareRoot(ty) => match ty {
-                FloatType::Float => writer.write(&[0x91]),
-                FloatType::Double => writer.write(&[0x9F]),
+                FloatType::F32 => writer.write(&[0x91]),
+                FloatType::F64 => writer.write(&[0x9F]),
             },
             Instruction::Minimum(ty) => match ty {
-                FloatType::Float => writer.write(&[0x96]),
-                FloatType::Double => writer.write(&[0xA4]),
+                FloatType::F32 => writer.write(&[0x96]),
+                FloatType::F64 => writer.write(&[0xA4]),
             },
             Instruction::Maximum(ty) => match ty {
-                FloatType::Float => writer.write(&[0x97]),
-                FloatType::Double => writer.write(&[0xA5]),
+                FloatType::F32 => writer.write(&[0x97]),
+                FloatType::F64 => writer.write(&[0xA5]),
             },
             Instruction::CopySign(ty) => match ty {
-                FloatType::Float => writer.write(&[0x98]),
-                FloatType::Double => writer.write(&[0xA6]),
+                FloatType::F32 => writer.write(&[0x98]),
+                FloatType::F64 => writer.write(&[0xA6]),
             },
-            Instruction::IntWrap => writer.write(&[0xA7]),
-            Instruction::IntExtend(signed) => match signed {
+            Instruction::I32Wrap => writer.write(&[0xA7]),
+            Instruction::I32Extend(signed) => match signed {
                 true => writer.write(&[0xAC]),
                 false => writer.write(&[0xAD]),
             },
-            Instruction::IntTruncate { ty, float, signed } => match ty {
-                IntegerType::Int => match (float, signed) {
-                    (FloatType::Float, true) => writer.write(&[0xA8]),
-                    (FloatType::Float, false) => writer.write(&[0xA9]),
-                    (FloatType::Double, true) => writer.write(&[0xAA]),
-                    (FloatType::Double, false) => writer.write(&[0xAB]),
+            Instruction::I32Truncate { ty, float, signed } => match ty {
+                IntegerType::I32 => match (float, signed) {
+                    (FloatType::F32, true) => writer.write(&[0xA8]),
+                    (FloatType::F32, false) => writer.write(&[0xA9]),
+                    (FloatType::F64, true) => writer.write(&[0xAA]),
+                    (FloatType::F64, false) => writer.write(&[0xAB]),
                 },
-                IntegerType::Long => match (float, signed) {
-                    (FloatType::Float, true) => writer.write(&[0xAE]),
-                    (FloatType::Float, false) => writer.write(&[0xAF]),
-                    (FloatType::Double, true) => writer.write(&[0xB0]),
-                    (FloatType::Double, false) => writer.write(&[0xB1]),
+                IntegerType::I64 => match (float, signed) {
+                    (FloatType::F32, true) => writer.write(&[0xAE]),
+                    (FloatType::F32, false) => writer.write(&[0xAF]),
+                    (FloatType::F64, true) => writer.write(&[0xB0]),
+                    (FloatType::F64, false) => writer.write(&[0xB1]),
                 },
             },
-            Instruction::Convert { ty, int, signed } => match ty {
-                FloatType::Float => match (int, signed) {
-                    (IntegerType::Int, true) => writer.write(&[0xB2]),
-                    (IntegerType::Int, false) => writer.write(&[0xB3]),
-                    (IntegerType::Long, true) => writer.write(&[0xB4]),
-                    (IntegerType::Long, false) => writer.write(&[0xB5]),
+            Instruction::Convert { ty, tgt_ty, signed } => match ty {
+                FloatType::F32 => match (tgt_ty, signed) {
+                    (IntegerType::I32, true) => writer.write(&[0xB2]),
+                    (IntegerType::I32, false) => writer.write(&[0xB3]),
+                    (IntegerType::I64, true) => writer.write(&[0xB4]),
+                    (IntegerType::I64, false) => writer.write(&[0xB5]),
                 },
-                FloatType::Double => match (int, signed) {
-                    (IntegerType::Int, true) => writer.write(&[0xB7]),
-                    (IntegerType::Int, false) => writer.write(&[0xB8]),
-                    (IntegerType::Long, true) => writer.write(&[0xB9]),
-                    (IntegerType::Long, false) => writer.write(&[0xBA]),
+                FloatType::F64 => match (tgt_ty, signed) {
+                    (IntegerType::I32, true) => writer.write(&[0xB7]),
+                    (IntegerType::I32, false) => writer.write(&[0xB8]),
+                    (IntegerType::I64, true) => writer.write(&[0xB9]),
+                    (IntegerType::I64, false) => writer.write(&[0xBA]),
                 },
             },
             Instruction::FloatDemote => writer.write(&[0xB6]),
             Instruction::FloatPromote => writer.write(&[0xBB]),
-            Instruction::IntReinterpret => writer.write(&[0xBC]),
-            Instruction::LongReinterpret => writer.write(&[0xBD]),
-            Instruction::FloatReinterpret => writer.write(&[0xBE]),
-            Instruction::DoubleReinterpret => writer.write(&[0xBF]),
+            Instruction::I32ReI32erpret => writer.write(&[0xBC]),
+            Instruction::LongReI32erpret => writer.write(&[0xBD]),
+            Instruction::FloatReI32erpret => writer.write(&[0xBE]),
+            Instruction::DoubleReI32erpret => writer.write(&[0xBF]),
             Instruction::Extend { ty, base } => match ty {
-                IntegerType::Int => match base {
-                    StorageType::Byte => writer.write(&[0xC0]),
-                    StorageType::Short => writer.write(&[0xC1]),
-                    StorageType::Int => panic!(),
+                IntegerType::I32 => match base {
+                    StorageType::I8 => writer.write(&[0xC0]),
+                    StorageType::I16 => writer.write(&[0xC1]),
+                    StorageType::I32 => panic!(),
                 },
-                IntegerType::Long => match base {
-                    StorageType::Byte => writer.write(&[0xC2]),
-                    StorageType::Short => writer.write(&[0xC3]),
-                    StorageType::Int => writer.write(&[0xC4]),
+                IntegerType::I64 => match base {
+                    StorageType::I8 => writer.write(&[0xC2]),
+                    StorageType::I16 => writer.write(&[0xC3]),
+                    StorageType::I32 => writer.write(&[0xC4]),
                 },
             },
             Instruction::SaturateTruncate { ty, float, signed } => {
                 writer.write(&[0xFC])?;
                 match ty {
-                    IntegerType::Int => match (float, signed) {
-                        (FloatType::Float, true) => writer.write(&[0x00]),
-                        (FloatType::Float, false) => writer.write(&[0x01]),
-                        (FloatType::Double, true) => writer.write(&[0x02]),
-                        (FloatType::Double, false) => writer.write(&[0x03]),
+                    IntegerType::I32 => match (float, signed) {
+                        (FloatType::F32, true) => writer.write(&[0x00]),
+                        (FloatType::F32, false) => writer.write(&[0x01]),
+                        (FloatType::F64, true) => writer.write(&[0x02]),
+                        (FloatType::F64, false) => writer.write(&[0x03]),
                     },
-                    IntegerType::Long => match (float, signed) {
-                        (FloatType::Float, true) => writer.write(&[0x04]),
-                        (FloatType::Float, false) => writer.write(&[0x05]),
-                        (FloatType::Double, true) => writer.write(&[0x06]),
-                        (FloatType::Double, false) => writer.write(&[0x07]),
+                    IntegerType::I64 => match (float, signed) {
+                        (FloatType::F32, true) => writer.write(&[0x04]),
+                        (FloatType::F32, false) => writer.write(&[0x05]),
+                        (FloatType::F64, true) => writer.write(&[0x06]),
+                        (FloatType::F64, false) => writer.write(&[0x07]),
                     },
                 }
             }
