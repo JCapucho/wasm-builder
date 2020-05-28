@@ -3,7 +3,7 @@ use super::types;
 use std::io::{self, Write};
 use types::ValType;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum BlockType {
     Empty,
     Type(types::ValType),
@@ -20,7 +20,7 @@ impl BlockType {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct MemoryArgument {
     pub alignment: u32,
     pub offset: u32,
@@ -34,14 +34,14 @@ impl MemoryArgument {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum StorageType {
     I8,  // 8
     I16, // 16
     I32, // 32
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Literal {
     I32(i32),
     I64(i64),
@@ -49,19 +49,19 @@ pub enum Literal {
     F64(f64),
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum IntegerType {
     I32,
     I64,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FloatType {
     F32,
     F64,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Instruction {
     Unreachable,
     NOP,
@@ -690,7 +690,7 @@ impl Instruction {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Expr(pub Vec<Instruction>);
 
 impl Expr {
