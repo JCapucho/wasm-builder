@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum ValType {
     Int,
     Long,
@@ -8,7 +8,7 @@ pub enum ValType {
     Double,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Limits {
     pub min: u32,
     pub max: Option<u32>,
@@ -89,7 +89,7 @@ pub(crate) fn encode_result_type(writer: &mut impl Write, types: &[ValType]) -> 
     Ok(())
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FunctionType {
     pub parameter_types: Vec<ValType>,
     pub return_types: Vec<ValType>,
@@ -106,7 +106,7 @@ impl FunctionType {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct MemoryType {
     pub lim: Limits,
 }
@@ -117,7 +117,7 @@ impl MemoryType {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct TableType {
     pub lim: Limits,
 }
@@ -129,7 +129,7 @@ impl TableType {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct GlobalType {
     pub ty: ValType,
     pub mutable: bool,
