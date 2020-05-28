@@ -17,13 +17,13 @@ mod tests {
             body: instr::Expr(vec![
                 instr::Instruction::LocalGet(0),
                 instr::Instruction::LocalGet(1),
-                instr::Instruction::Add(instr::MemoryType::Float),
+                instr::Instruction::Add(types::ValType::F32),
             ]),
         };
 
         module.types.push(types::FunctionType {
-            parameter_types: vec![types::ValType::Float, types::ValType::Float],
-            return_types: vec![types::ValType::Float],
+            parameter_types: vec![types::ValType::F32, types::ValType::F32],
+            return_types: vec![types::ValType::F32],
         });
         module.functions.push(0);
         module.code.push(add);

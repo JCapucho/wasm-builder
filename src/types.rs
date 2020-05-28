@@ -2,10 +2,10 @@ use std::io::{self, Write};
 
 #[derive(Debug, Copy, Clone)]
 pub enum ValType {
-    Int,
-    Long,
-    Float,
-    Double,
+    I32,
+    I64,
+    F32,
+    F64,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -70,10 +70,10 @@ pub(crate) fn encode_name(writer: &mut impl Write, val: &str) -> io::Result<usiz
 
 pub(crate) fn encode_val_type(writer: &mut impl Write, ty: ValType) -> io::Result<usize> {
     match ty {
-        ValType::Int => writer.write(&[0x7F]),
-        ValType::Long => writer.write(&[0x7E]),
-        ValType::Float => writer.write(&[0x7D]),
-        ValType::Double => writer.write(&[0x7C]),
+        ValType::I32 => writer.write(&[0x7F]),
+        ValType::I64 => writer.write(&[0x7E]),
+        ValType::F32 => writer.write(&[0x7D]),
+        ValType::F64 => writer.write(&[0x7C]),
     }
 }
 
