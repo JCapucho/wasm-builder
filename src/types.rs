@@ -159,8 +159,8 @@ impl GlobalType {
     pub(crate) fn encode(&self, writer: &mut impl Write) -> io::Result<()> {
         encode_val_type(writer, self.ty)?;
         match self.mutable {
-            true => writer.write(&[0x00]),
-            false => writer.write(&[0x01]),
+            true => writer.write(&[0x01]),
+            false => writer.write(&[0x00]),
         }?;
         Ok(())
     }
